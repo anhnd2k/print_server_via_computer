@@ -5,37 +5,39 @@ const upload = require("express-fileupload");
 const fs = require("fs");
 const { execSync } = require("child_process");
 const ptp = require("pdf-to-printer");
-var CronJob = require('cron').CronJob;
 const portfinder = require('portfinder');
 
 server.use(upload());
 server.use(express.json());
 server.use(express.urlencoded({ extended: false }));
 
-//clear forder file pdf in computer (/1 hour)
-var job = new CronJob('* * 1 * * *', function() {
-  console.log('You will see this message every second');
-  fs.rmSync("C:\\pdf_folder", { recursive: true, force: true });
-}, null, true, 'America/Los_Angeles');
-job.start();
-
 //get list printer in computer
 server.get("/printers", async (req, res) => {
-  let arrayPrinter = [];
+  let printers = [];
   try {
-    async function print()
-    {
-        const printers = await ptp.getPrinters();
-        for(const p of printers)
-        {
-          arrayPrinter.push({name: p.name.trim()})
+    let stdout = execSync("wmic printer list brief", { encoding: "ascii" });
+    stdout = stdout.split("  ");
+    // let printers = [];
+    let j = 0;
+    stdout = stdout.filter(item => item);
+    for (let i = 0; i < stdout.length; i++) {
+        if (stdout[i] == " \r\r\n" || stdout[i] == "\r\r\n" || stdout[i].includes("\r\r\n") || stdout[i].includes(" \r\r\n")) {
+            if(stdout[i + 1] !== undefined && stdout[i + 1] !== null){
+            const resultPrinterName = stdout[i + 1].trim();
+            const resultPrinterNameArray = resultPrinterName.split('')
+            if(resultPrinterNameArray[0] === "\\" && resultPrinterNameArray[1] === "\\"){
+              resultPrinterNameArray.shift();
+            }
+              printers[j] = {name: resultPrinterNameArray.toString().replaceAll(',', '').trim()}
+        }
+            j++;
         }
     }
-    await print();
+
     return res.status(200).send({
       success: true,
       message: "success get list printer",
-      body: arrayPrinter,
+      body: printers,
     });
   } catch {
     return res.status(400).send({
@@ -114,7 +116,7 @@ server.post('/print', (req, res) => {
             else {
                 // print in win32
               try { 
-                const stringPrintInWin = `PDFtoPrinter "${pathFilePrint}" "${printerName}"`
+                const stringPrintInWin = `printto "${pathFilePrint}" "${printerName}"`
                 const resPrinterInWin = execSync(stringPrintInWin, { encoding: "ascii" });
                 return res.status(200).send({success : true, mess:"print file success in windows"})
               } catch {

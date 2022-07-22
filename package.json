@@ -7,9 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "electron-forge start",
     "package": "electron-forge package",
-    "make": "electron-forge make"
+    "make": "electron-forge make",
+    "make_win32": "electron-forge make --arch=ia32",
+    "make_win64": "electron-forge make --arch=x64"
   },
-  "author": "hoanganh",
+  "author": "MVS_2.0 VSS_anhnh153",
   "license": "ISC",
   "dependencies": {
     "cron": "^1.8.2",
